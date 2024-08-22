@@ -77,6 +77,7 @@ def predict():
     y = request.args.get('y', type=int)
     x2 = request.args.get('x2', type=int)
     y2 = request.args.get('y2', type=int)
+    pm = request.args.get('pm', type=int)
 
     if 'image' not in request.files:
        return jsonify({"error": "No image file provided"}), 400
@@ -98,13 +99,22 @@ def predict():
         input_label = np.array([1])
 
         if x2 is not None and y2 is not None:
-            input_box = np.array([x, y, x2, y2])
-            masks, _, _ = predictor.predict(
-                point_coords=None,
-                point_labels=None,
-                box=input_box[None, :],
-                multimask_output=True,
-            )
+            if pm == 3: # box mode
+                input_box = np.array([x, y, x2, y2])
+                masks, _, _ = predictor.predict(
+                    point_coords=None,
+                    point_labels=None,
+                    box=input_box[None, :],
+                    multimask_output=False,
+                )
+            elif pm == 2: # multi points mode
+                input_points = np.array([[x,y], [x2,y2]])
+                input_labels = np.ones(len(input_points), dtype=int)
+                masks, _, _ = predictor.predict(
+                    point_coords=input_points,
+                    point_labels=input_labels,
+                    multimask_output=False,
+                )
             processed_image = process_image(image, masks, None, None, normalize=bool(normalize), epsilon=epsilon)
         else:
             masks, _, _ = predictor.predict(

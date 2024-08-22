@@ -62,7 +62,7 @@ def extract_coordinates(point_info):
         # Instead of raising an exception, return None values
         return None, None, None, None
 
-def process_image(image, point_info, normalize, epsilon):
+def process_image(image, point_info, normalize, epsilon, pointer_mode):
     if image is None:
         return "Please upload an image first.", None, None
     
@@ -80,7 +80,7 @@ def process_image(image, point_info, normalize, epsilon):
 
         # Make the API call
         nml_param = 1 if normalize == "Apply Normalization" else 0
-        url = f"{API_BASE_URL}/predict?nml={nml_param}&epsilon={epsilon}"
+        url = f"{API_BASE_URL}/predict?nml={nml_param}&epsilon={epsilon}&pm={pointer_mode}"
         
         # Add coordinates to URL if they exist
         if x1 is not None and y1 is not None:
@@ -144,6 +144,11 @@ with gr.Blocks() as demo:
             step=0.001, 
             label="Normalization Strength (Epsilon)"
         )
+        pointer_mode = gr.Radio(
+            ["Normal", "SameObject", "Box"],
+            label="Pointer Mode",
+            value="Normal"
+        )
 
     process_button = gr.Button("Process Image")
     result_image = gr.Image(label="Result Image", height=600, show_download_button=True)
@@ -152,10 +157,11 @@ with gr.Blocks() as demo:
         point_selector.reset()
         return "No selection", image
 
-    def trigger_processing(image, point_info, normalize, epsilon):
+    def trigger_processing(image, point_info, normalize, epsilon, pointer_mode):
         if image is None:
             return "Please upload an image first.", None, None
-        return process_image(image, point_info, normalize, epsilon)
+        mode_map = {"Normal": 1, "SameObject": 2, "Box": 3}
+        return process_image(image, point_info, normalize, epsilon, mode_map[pointer_mode])
 
     # Set up the event listeners
     image_input.select(
@@ -174,7 +180,7 @@ with gr.Blocks() as demo:
     # Modify the process_button click event
     process_button.click(
         trigger_processing,
-        inputs=[image_input, point_info, normalize, epsilon],
+        inputs=[image_input, point_info, normalize, epsilon, pointer_mode],
         outputs=[point_info, image_with_selection, result_image]
     )
 
@@ -184,10 +190,11 @@ with gr.Blocks() as demo:
     2. (Optional) Click on the image to select a single point, or click twice to select a box.
     3. Select whether to apply edge normalization or not.
     4. Adjust the Normalization Strength (Epsilon) if applying normalization.
-    5. Click the 'Process Image' button to send the image (with or without selection) to the API and get the result.
-    6. The result image will be displayed below.
-    7. After processing, you can make a new selection or upload a new image.
-    8. If the result image is not fully visible, you can:
+    5. Choose a Pointer Mode: Normal, SameObject, or Box.
+    6. Click the 'Process Image' button to send the image (with or without selection) to the API and get the result.
+    7. The result image will be displayed below.
+    8. After processing, you can make a new selection or upload a new image.
+    9. If the result image is not fully visible, you can:
         - Click on the image to open it in full size in a new tab.
         - Use the download button to save and view the full image locally.
     """)
