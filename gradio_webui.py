@@ -7,7 +7,7 @@ import base64
 import re
 
 # Global variable for API base URL
-API_BASE_URL = "https://mlserver.geniee.jp/sam2"
+API_BASE_URL = "http://localhost/sam2"
 
 class PointSelector:
     def __init__(self):
